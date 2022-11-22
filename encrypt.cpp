@@ -146,7 +146,7 @@ int main() {
 	char fileName[1024];
 	cout << "Enter file name to encrypt: ";
 	cin.getline(fileName, sizeof(fileName));
-	out << "Working on: " << fileName << endl;
+	cout << "Working on: " << fileName << endl;
 	string fileNameSTR;
 	fileNameSTR.append(fileName);
 
