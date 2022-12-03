@@ -156,20 +156,17 @@ int main() {
 	if (infile1.is_open())
 	{
 		std::stringstream strStream;
-    strStream << infile1.rdbuf(); //read the file
-    msgstr = strStream.str(); //str holds the content of the file
-
-		cout << "Read in encrypted message from message.aes" << endl;
+		strStream << infile1.rdbuf(); //read the file
+		msgstr = strStream.str(); //str holds the content of the file
 		infile1.close();
 	} else cout << "Unable to open file\n";
-	//msgstr += '\n'; // need to add newline to ensure proper dycryption later
 	char * msg = new char[msgstr.size()+1];
 	strcpy(msg, msgstr.c_str());
 	char *message;
 	message = msg;
 
 	// output the plaintext to be encrypted
-	cout << "Plaintext: " << message << endl;
+	cout << endl << "Plaintext: " << endl << message << endl << endl;
 
 	// Pad message to 16 bytes
 	int originalLen = strlen((const char *)message);
@@ -196,7 +193,7 @@ int main() {
 
 	string str;
 	ifstream infile;
-	infile.open("keyfile", ios::in | ios::binary);
+	infile.open("../aes/keyfile", ios::in | ios::binary);
 
 	if (infile.is_open())
 	{
@@ -227,24 +224,16 @@ int main() {
 	ENCfileNameSTR.pop_back();
 	ENCfileNameSTR.pop_back();
 	ENCfileNameSTR.pop_back();
-	ENCfileNameSTR.append("aes");
-	// Write the encrypted string out to file "message.aes"
+	ENCfileNameSTR.append("txt");
 	ofstream MyFile(ENCfileNameSTR);
 	for (int i = 0; i < paddedMessageLen; i++) {
 		MyFile <<  encryptedMessage[i];
-		//cout << " ";
 	}
 	
-	cout << "Encrypted message in hex:" << endl;
 	int m;
-	for ( m = 0; m < paddedMessageLen; m++) {
-		cout << encryptedMessage[m];
-		cout << " ";
-		
-	}
-	cout << endl;
+	for ( m = 0; m < paddedMessageLen; m++);
 	cout << "number of encrypted characters: " << m;
-	cout << endl;
+	cout << endl << endl;
 	
 	cout << "Encrypted message in hex:" << endl;
 	for ( int n = 0; n < paddedMessageLen; n++) {
@@ -252,8 +241,9 @@ int main() {
 		cout << " ";
 		
 	}
-
+	cout << endl << endl << "Encrypted message stored in: " << ENCfileNameSTR << endl;
 	
+
 	// Free memory
 	delete[] paddedMessage;
 	delete[] encryptedMessage;

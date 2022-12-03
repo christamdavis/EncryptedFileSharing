@@ -178,12 +178,11 @@ int main() {
 	// Read in the key
 	string keystr;
 	ifstream keyfile;
-	keyfile.open("keyfile", ios::in | ios::binary);
+	keyfile.open("../aes/keyfile", ios::in | ios::binary);
 
 	if (keyfile.is_open())
 	{
 		getline(keyfile, keystr); // The first line of file should be the key
-		cout << "Read in the 128-bit key from keyfile" << endl;
 		keyfile.close();
 	}
 
@@ -211,23 +210,12 @@ int main() {
 		AESDecrypt(encryptedMessage + i, expandedKey, decryptedMessage + i);
 	}
 
-	cout << "Decrypted message in hex:" << endl;
-	cout << endl;
+	cout << endl << "Decrypted message in hex:" << endl;
 	for (int i = 0; i < messageLen; i++) {
 		cout << hex << (int)decryptedMessage[i];
 		cout << " ";
 	}
 	cout << endl;
-
-	cout << "Decrypted message stored in:" << endl;
-	fileNameSTR = "./data/client/";
-	string tempName = fileName;
-	tempName.erase(0,3);
-	fileNameSTR.append(tempName);
-	fileNameSTR.erase(fileNameSTR.size() - 3);
-	fileNameSTR.append("txt");
-	cout << fileNameSTR << endl;
-
 
 	char ch2;
     fstream dm;
@@ -239,7 +227,14 @@ int main() {
 			dm << ch2;
 		}
 	}
-	//cout << endl;
+	
+	fileNameSTR = "./data/client/";
+	string tempName = fileName;
+	tempName.erase(0,3);
+	fileNameSTR.append(tempName);
+	fileNameSTR.erase(fileNameSTR.size() - 3);
+	fileNameSTR.append("txt");
+	cout << "Decrypted message stored in:" << fileNameSTR << endl;
 
 	return 0;
 }
