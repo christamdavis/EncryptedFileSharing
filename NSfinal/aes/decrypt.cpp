@@ -218,13 +218,28 @@ int main() {
 		cout << " ";
 	}
 	cout << endl;
-	cout << endl;
-	cout << "Decrypted message: " <<endl;
-	cout << endl;
+
+	cout << "Decrypted message stored in:" << endl;
+	fileNameSTR = "./data/client/";
+	string tempName = fileName;
+	tempName.erase(0,3);
+	fileNameSTR.append(tempName);
+	fileNameSTR.erase(fileNameSTR.size() - 3);
+	fileNameSTR.append("txt");
+	cout << fileNameSTR << endl;
+
+
+	char ch2;
+    fstream dm;
+	dm.open(fileNameSTR, ios::out | ios::trunc | ios::binary);;
 	for (int i = 0; i < messageLen; i++) {
-		cout << decryptedMessage[i];
+		//cout << decryptedMessage[i];
+		if(decryptedMessage[i] != '\0'){
+			ch2 = decryptedMessage[i];
+			dm << ch2;
+		}
 	}
-	cout << endl;
+	//cout << endl;
 
 	return 0;
 }
