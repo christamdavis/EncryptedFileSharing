@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <cstdio>
+#include <vector>
 
 #include <arpa/inet.h> // inet_addr()
 #include <netdb.h>
@@ -19,33 +20,70 @@ using namespace std;
 #define MAX 4096
 #define PORT 8080
 #define SA struct sockaddr
-fstream file;
 
 const int buffSize = MAX;
 
-
-void receive_file(int mySocket, fstream& file){
+void receive_file(int mySocket, ofstream& file){
     unsigned char buffer[buffSize] = {};
     int valread = read(mySocket , buffer, buffSize);
 
+    // copy contents of buffer into string
+    size_t sData_length;
+    sData_length = buffSize;
+    string myString;
+    myString.resize(buffSize);
+    for(int i = 0; i < buffSize; i++){
+        myString[i] = buffer[i];
+        //cout << buffer[i];
+    }
+    
+    // custom remove trailing null characters
+    int i = buffSize-1;
+    while(myString[i-1] == '\0'){
+        myString.pop_back();
+        i--;
+    }
+    myString.pop_back();
+
+    // for(int i = buffSize-1; i > 0; i--){
+    //     if(myString[i-1] == '\0'){
+    //         myString.pop_back();
+    //     }
+
+    // }
+
     cout<<"[LOG] : Data received "<<valread<<" bytes\n";
     cout<<"[LOG] : Saving data to file.\n";
-
-    file<<buffer;
+    file<<myString;
     cout<<"[LOG] : File Saved.\n";
 }
-void transmit_file(int mySocket, fstream& file){
-    string contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    cout<<"[LOG] : Transmission Data Size "<<contents.length()<<" Bytes.\n";
-
-    cout<<"[LOG] : Sending...\n";
-
-    cout << "THIS IS THE STRING I'M SENDING: " << endl << contents.c_str() << endl;
+void transmit_file(int mySocket, ifstream& file){
     
-    int bytes_sent = send(mySocket , contents.c_str() , contents.length() , 0 );
-    cout<<"[LOG] : Transmitted Data Size "<<bytes_sent<<" Bytes.\n";
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    std::string myStringToSend = ss.str();
 
+    char* sData_source_;
+    size_t sData_length;
+
+    sData_length = myStringToSend.size();
+    // allocate memory for sData_source
+    sData_source_ = (char*)malloc(sData_length);
+    // copy data to sData_source
+    for(int i = 0; i < myStringToSend.length(); i++){
+        sData_source_[i] = myStringToSend[i];
+        //cout << sData_source_[i];
+    }
+    //cout << endl;
+
+    cout<<"[LOG] : Transmission Data Size "<<myStringToSend.length()<<" Bytes.\n";
+    cout<<"[LOG] : Sending...\n";
+    // cout << "THIS IS THE STRING I'M SENDING: " << endl << myStringToSend << endl;
+    // cout << "THIS IS THE STRING I'M SENDING (c_str): " << endl << sData_source_ << endl;
+    int bytes_sent = send(mySocket , myStringToSend.c_str() , myStringToSend.length() , 0 );
+    cout<<"[LOG] : Transmitted Data Size "<<bytes_sent<<" Bytes.\n";
     cout<<"[LOG] : File Transfer Complete.\n";
+
 }
 
 void func(int sockfd)
@@ -54,6 +92,8 @@ void func(int sockfd)
     int n;
     string rfs = "";
     string fileName = "";
+    ifstream inFile;
+    ofstream ouFile;
 
     //for(;;){
         // OPTION SELECT
@@ -88,9 +128,6 @@ void func(int sockfd)
         }   
         rfs = ss.str();
 
-        //cout << "RFS: " << rfs;
-        //cout << "rfs == 1? " << (rfs.compare("1")==0) << endl;
-
         bzero(buff, MAX);
         // OPTION 1: UPLOAD
         if((rfs.compare("1") == 0)){
@@ -118,25 +155,23 @@ void func(int sockfd)
             }   
             rfs = ss.str();
             
-            //cout << "RFS: " << rfs;
-            //cout << "rfs == 1? " << (rfs.compare("1")==0) << endl;
-
             bzero(buff, MAX);
             if(rfs.compare("1") == 0){
                 string openFile = ".//data//client//";
                 openFile.append(fileName);
 
+
                 // open the file
-                file.open(openFile, ios::in | ios::binary);
-                if(file.is_open()){
-                    cout << "[LOG] : File is ready to Transmit.\n";
+                inFile.open(openFile, ios::binary);
+                if(inFile.is_open()){
+                    cout<< "[LOG] : File is ready to Transmit.\n";
                 }
                 else{
-                    cout << "[ERROR] : File loading failed, Exititng.\n";
+                    cout<< "[ERROR] : File loading failed, Exititng.\n";
                     exit(EXIT_FAILURE);
                 }
                 // transmit to server
-                transmit_file(sockfd, file);
+                transmit_file(sockfd, inFile);
             }
 
         // OPTION 2: DOWNLOAD
@@ -166,21 +201,19 @@ void func(int sockfd)
             }   
             rfs = ss.str();
 
-            cout << "RFS: " << rfs;
-            cout << "rfs == 2? " << (rfs.compare("2")==0) << endl;
-
             if (rfs.compare("2") == 0) {
                 string openFile = ".//data//client//";
                 openFile.append(fileName);
-                file.open(openFile, ios::out | ios::trunc | ios::binary);
-                if(file.is_open()){
-                cout<<"[LOG] : File Created.\n";
+
+                ouFile.open(openFile, ios::trunc | ios::binary);
+                if(ouFile.is_open()){
+                    cout<<"[LOG] : File Created.\n";
                 }
                 else{
-                cout<<"[ERROR] : File creation failed, Exititng.\n";
-                exit(EXIT_FAILURE);
+                    cout<<"[ERROR] : File creation failed, Exititng.\n";
+                    exit(EXIT_FAILURE);
                 }
-                receive_file(sockfd, file);
+                receive_file(sockfd, ouFile);
             }
         }else {
             printf("Should not be here\n");
@@ -189,26 +222,6 @@ void func(int sockfd)
         
         
     //}
-    
-
-
-
-
-    // for (;;) {
-    //     bzero(buff, sizeof(buff));
-    //     printf("Enter the string : ");
-    //     n = 0;
-    //     while ((buff[n++] = getchar()) != '\n')
-    //         ;
-    //     write(sockfd, buff, sizeof(buff));
-    //     bzero(buff, sizeof(buff));
-    //     read(sockfd, buff, sizeof(buff));
-    //     printf("From Server : %s", buff);
-    //     if ((strncmp(buff, "exit", 4)) == 0) {
-    //         printf("Client Exit...\n");
-    //         break;
-    //     }
-    // }
 }
  
 int main()
