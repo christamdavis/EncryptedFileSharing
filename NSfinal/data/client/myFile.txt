@@ -3,4 +3,4 @@ This is line two of my text file.
 this file has a lot of lines :)
 This is the second to last line of my text file (line 4).
 This is the last line of my text file.
-I lied, this is the last line, gottem.
+I lied, this is the last line.
