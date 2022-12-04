@@ -141,7 +141,7 @@ void AESDecrypt(unsigned char * encryptedMessage, unsigned char * expandedKey, u
 
 int main() {
 
-	// get the name of the file to encrypt
+	// get the name of the file to decrypt
 	char fileName[1024];
 	cout << "Enter file name to decrypt: ";
 	
@@ -174,7 +174,8 @@ int main() {
 	}
 	cout << endl;
 
- 
+	cout << "THIS IS THE STRING I'M DECRYPTING: " << endl << encryptedMessage << endl;
+    
 	// Read in the key
 	string keystr;
 	ifstream keyfile;
@@ -217,24 +218,22 @@ int main() {
 	}
 	cout << endl;
 
-	char ch2;
-    fstream dm;
-	dm.open(fileNameSTR, ios::out | ios::trunc | ios::binary);;
-	for (int i = 0; i < messageLen; i++) {
-		//cout << decryptedMessage[i];
-		if(decryptedMessage[i] != '\0'){
-			ch2 = decryptedMessage[i];
-			dm << ch2;
-		}
-	}
-	
 	fileNameSTR = "./data/client/";
 	string tempName = fileName;
 	tempName.erase(0,3);
 	fileNameSTR.append(tempName);
 	fileNameSTR.erase(fileNameSTR.size() - 3);
 	fileNameSTR.append("txt");
-	cout << "Decrypted message stored in:" << fileNameSTR << endl;
+	cout << "Decrypted message stored in: " << fileNameSTR << endl;
 
+	char ch2;
+	ofstream dm;
+	dm.open(fileNameSTR, ios::trunc);
+	for (int i = 0; i < messageLen; i++) {
+		if(decryptedMessage[i] != '\0'){
+			ch2 = decryptedMessage[i];
+			dm << ch2;
+		}
+	}
 	return 0;
 }
