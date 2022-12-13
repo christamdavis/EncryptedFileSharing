@@ -1,5 +1,5 @@
 Encrypted-File-Storage
-Scott Gordon
+Scott Gordon, Than Lim
 
 This program was developed as the course project for COMP 5610.
 
