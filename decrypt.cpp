@@ -1,11 +1,7 @@
-/* decrypt.cpp
- * Performs decryption using AES 128-bit
- * @author Cecelia Wisniewska
- */
-#include <iostream>
-#include <cstring>
-#include <fstream>
-#include <sstream>
+// Scott Gordon
+// performs decryption using AES 128-bit
+// implemented by modifying the work of @author Cecelia Wisniewska
+#include "decrypt.h"
 #include "structures.h"
 
 using namespace std;
@@ -14,7 +10,7 @@ using namespace std;
  * SubRoundKey is simply an XOR of a 128-bit block with the 128-bit key.
  * So basically does the same as AddRoundKey in the encryption
  */
-void SubRoundKey(unsigned char * state, unsigned char * roundKey) {
+void DSubRoundKey(unsigned char * state, unsigned char * roundKey) {
 	for (int i = 0; i < 16; i++) {
 		state[i] ^= roundKey[i];
 	}
@@ -23,7 +19,7 @@ void SubRoundKey(unsigned char * state, unsigned char * roundKey) {
 /* InverseMixColumns uses mul9, mul11, mul13, mul14 look-up tables
  * Unmixes the columns by reversing the effect of MixColumns in encryption
  */
-void InverseMixColumns(unsigned char * state) {
+void DInverseMixColumns(unsigned char * state) {
 	unsigned char tmp[16];
 
 	tmp[0] = (unsigned char)mul14[state[0]] ^ mul11[state[1]] ^ mul13[state[2]] ^ mul9[state[3]];
@@ -52,7 +48,7 @@ void InverseMixColumns(unsigned char * state) {
 }
 
 // Shifts rows right (rather than left) for decryption
-void ShiftRows(unsigned char * state) {
+void DShiftRows(unsigned char * state) {
 	unsigned char tmp[16];
 
 	/* Column 1 */
@@ -87,7 +83,7 @@ void ShiftRows(unsigned char * state) {
 /* Perform substitution to each of the 16 bytes
  * Uses inverse S-box as lookup table
  */
-void SubBytes(unsigned char * state) {
+void DSubBytes(unsigned char * state) {
 	for (int i = 0; i < 16; i++) { // Perform substitution to each of the 16 bytes
 		state[i] = inv_s[state[i]];
 	}
@@ -97,18 +93,18 @@ void SubBytes(unsigned char * state) {
  * The number of rounds is defined in AESDecrypt()
  * Not surprisingly, the steps are the encryption steps but reversed
  */
-void Round(unsigned char * state, unsigned char * key) {
-	SubRoundKey(state, key);
-	InverseMixColumns(state);
-	ShiftRows(state);
-	SubBytes(state);
+void DRound(unsigned char * state, unsigned char * key) {
+	DSubRoundKey(state, key);
+	DInverseMixColumns(state);
+	DShiftRows(state);
+	DSubBytes(state);
 }
 
 // Same as Round() but no InverseMixColumns
-void InitialRound(unsigned char * state, unsigned char * key) {
-	SubRoundKey(state, key);
-	ShiftRows(state);
-	SubBytes(state);
+void DInitialRound(unsigned char * state, unsigned char * key) {
+	DSubRoundKey(state, key);
+	DShiftRows(state);
+	DSubBytes(state);
 }
 
 /* The AES decryption function
@@ -122,15 +118,15 @@ void AESDecrypt(unsigned char * encryptedMessage, unsigned char * expandedKey, u
 		state[i] = encryptedMessage[i];
 	}
 
-	InitialRound(state, expandedKey+160);
+	DInitialRound(state, expandedKey+160);
 
 	int numberOfRounds = 9;
 
 	for (int i = 8; i >= 0; i--) {
-		Round(state, expandedKey + (16 * (i + 1)));
+		DRound(state, expandedKey + (16 * (i + 1)));
 	}
 
-	SubRoundKey(state, expandedKey); // Final round
+	DSubRoundKey(state, expandedKey); // Final round
 
 	// Copy decrypted state to buffer
 	for (int i = 0; i < 16; i++) {
@@ -138,49 +134,52 @@ void AESDecrypt(unsigned char * encryptedMessage, unsigned char * expandedKey, u
 	}
 }
 
+/*
 int main() {
 
-	//cout << "=============================" << endl;
-	//cout << " 128-bit AES Decryption Tool " << endl;
-	//cout << "=============================" << endl;
+	// get the name of the file to decrypt
+	char fileName[1024];
+	cout << "Enter file name to decrypt: ";
+	
+	cin.getline(fileName, sizeof(fileName));
 
-	// Read in the message from message.aes
-	string msgstr;
-	ifstream infile;
-	infile.open("message.aes", ios::in | ios::binary);
+	cout << "Working on: " << fileName << endl;
+	string fileNameSTR = "./data/client/";
+	fileNameSTR.append(fileName);
 
-	if (infile.is_open())
-	{
-		getline(infile, msgstr); // The first line of file is the message
-		cout << "Read in encrypted message from message.aes" << endl;
-		infile.close();
+	// Read from the text file
+	string msgstr; 
+	char ch;
+	ifstream f(fileNameSTR);
+	ostringstream ss;
+
+	while (f.get(ch)) {
+	//Output the text from the file
+	ss << ch;
+	}   
+	msgstr = ss.str();
+	int n = msgstr.length();
+	unsigned char * encryptedMessage = new unsigned char[n]; 
+
+	const char* encrypted = msgstr.c_str();
+
+
+	int m;
+	for (m =0; m< n; m++){
+		encryptedMessage[m] = encrypted[m];	
 	}
+	cout << endl;
 
-	else cout << "Unable to open file";
-
-	char * msg = new char[msgstr.size()+1];
-
-	strcpy(msg, msgstr.c_str());
-
-	int n = strlen((const char*)msg);
-
-	unsigned char * encryptedMessage = new unsigned char[n];
-	for (int i = 0; i < n; i++) {
-		encryptedMessage[i] = (unsigned char)msg[i];
-	}
-
-	// Free memory
-	delete[] msg;
-
+	//cout << "THIS IS THE STRING I'M DECRYPTING: " << endl << encryptedMessage << endl;
+    
 	// Read in the key
 	string keystr;
 	ifstream keyfile;
-	keyfile.open("keyfile", ios::in | ios::binary);
+	keyfile.open("../aes/keyfile", ios::in | ios::binary);
 
 	if (keyfile.is_open())
 	{
 		getline(keyfile, keystr); // The first line of file should be the key
-		cout << "Read in the 128-bit key from keyfile" << endl;
 		keyfile.close();
 	}
 
@@ -200,25 +199,38 @@ int main() {
 
 	KeyExpansion(key, expandedKey);
 
-	int messageLen = strlen((const char *)encryptedMessage);
-
+	int messageLen = m; //strlen((const char *)encryptedMessage);
+	 
 	unsigned char * decryptedMessage = new unsigned char[messageLen];
 
 	for (int i = 0; i < messageLen; i += 16) {
 		AESDecrypt(encryptedMessage + i, expandedKey, decryptedMessage + i);
 	}
 
-	cout << "Decrypted message in hex:" << endl;
+	cout << endl << "Decrypted message in hex:" << endl;
 	for (int i = 0; i < messageLen; i++) {
 		cout << hex << (int)decryptedMessage[i];
 		cout << " ";
 	}
 	cout << endl;
-	cout << "Decrypted message: ";
-	for (int i = 0; i < messageLen; i++) {
-		cout << decryptedMessage[i];
-	}
-	cout << endl;
 
+	fileNameSTR = "./data/client/";
+	string tempName = fileName;
+	tempName.erase(0,3);
+	fileNameSTR.append(tempName);
+	fileNameSTR.erase(fileNameSTR.size() - 3);
+	fileNameSTR.append("txt");
+	cout << "Decrypted message stored in: " << fileNameSTR << endl;
+
+	char ch2;
+	ofstream dm;
+	dm.open(fileNameSTR, ios::trunc);
+	for (int i = 0; i < messageLen; i++) {
+		if(decryptedMessage[i] != '\0'){
+			ch2 = decryptedMessage[i];
+			dm << ch2;
+		}
+	}
 	return 0;
 }
+*/

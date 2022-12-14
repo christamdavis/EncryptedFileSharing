@@ -1,12 +1,8 @@
-/* encrypt.cpp
- * Performs encryption using AES 128-bit
- * @author Cecelia Wisniewska
- */
+// Scott Gordon
+// performs encryption using AES 128-bit
+// implemented by modifying the work of @author Cecelia Wisniewska
 
-#include <iostream>
-#include <cstring>
-#include <fstream>
-#include <sstream>
+#include "encrypt.h"
 #include "structures.h"
 
 using namespace std;
@@ -14,7 +10,7 @@ using namespace std;
 /* Serves as the initial round during encryption
  * AddRoundKey is simply an XOR of a 128-bit block with the 128-bit key.
  */
-void AddRoundKey(unsigned char * state, unsigned char * roundKey) {
+void EAddRoundKey(unsigned char * state, unsigned char * roundKey) {
 	for (int i = 0; i < 16; i++) {
 		state[i] ^= roundKey[i];
 	}
@@ -23,14 +19,14 @@ void AddRoundKey(unsigned char * state, unsigned char * roundKey) {
 /* Perform substitution to each of the 16 bytes
  * Uses S-box as lookup table
  */
-void SubBytes(unsigned char * state) {
+void ESubBytes(unsigned char * state) {
 	for (int i = 0; i < 16; i++) {
 		state[i] = s[state[i]];
 	}
 }
 
 // Shift left, adds diffusion
-void ShiftRows(unsigned char * state) {
+void EShiftRows(unsigned char * state) {
 	unsigned char tmp[16];
 
 	/* Column 1 */
@@ -65,7 +61,7 @@ void ShiftRows(unsigned char * state) {
  /* MixColumns uses mul2, mul3 look-up tables
   * Source of diffusion
   */
-void MixColumns(unsigned char * state) {
+void EMixColumns(unsigned char * state) {
 	unsigned char tmp[16];
 
 	tmp[0] = (unsigned char) mul2[state[0]] ^ mul3[state[1]] ^ state[2] ^ state[3];
@@ -96,18 +92,18 @@ void MixColumns(unsigned char * state) {
 /* Each round operates on 128 bits at a time
  * The number of rounds is defined in AESEncrypt()
  */
-void Round(unsigned char * state, unsigned char * key) {
-	SubBytes(state);
-	ShiftRows(state);
-	MixColumns(state);
-	AddRoundKey(state, key);
+void ERound(unsigned char * state, unsigned char * key) {
+	ESubBytes(state);
+	EShiftRows(state);
+	EMixColumns(state);
+	EAddRoundKey(state, key);
 }
 
  // Same as Round() except it doesn't mix columns
-void FinalRound(unsigned char * state, unsigned char * key) {
-	SubBytes(state);
-	ShiftRows(state);
-	AddRoundKey(state, key);
+void EFinalRound(unsigned char * state, unsigned char * key) {
+	ESubBytes(state);
+	EShiftRows(state);
+	EAddRoundKey(state, key);
 }
 
 /* The AES encryption function
@@ -122,13 +118,13 @@ void AESEncrypt(unsigned char * message, unsigned char * expandedKey, unsigned c
 
 	int numberOfRounds = 9;
 
-	AddRoundKey(state, expandedKey); // Initial round
+	EAddRoundKey(state, expandedKey); // Initial round
 
 	for (int i = 0; i < numberOfRounds; i++) {
-		Round(state, expandedKey + (16 * (i+1)));
+		ERound(state, expandedKey + (16 * (i+1)));
 	}
 
-	FinalRound(state, expandedKey + 160);
+	EFinalRound(state, expandedKey + 160);
 
 	// Copy encrypted state to buffer
 	for (int i = 0; i < 16; i++) {
@@ -136,42 +132,43 @@ void AESEncrypt(unsigned char * message, unsigned char * expandedKey, unsigned c
 	}
 }
 
+/*
 int main() {
-
-	//cout << "=============================" << endl;
-	//cout << " 128-bit AES Encryption Tool   " << endl;
-	//cout << "=============================" << endl;
 
 	// get the name of the file to encrypt
 	char fileName[1024];
 	cout << "Enter file name to encrypt: ";
+	
 	cin.getline(fileName, sizeof(fileName));
+
 	cout << "Working on: " << fileName << endl;
-	string fileNameSTR;
+	string fileNameSTR = "./data/client/";
 	fileNameSTR.append(fileName);
 
 	// Read in the message from given file
 	string msgstr;
-	ifstream infile1;
-	infile1.open(fileNameSTR, ios::in | ios::binary);
+	std::ifstream infile1;
+  	infile1.open(fileNameSTR); //open the input file
 
 	if (infile1.is_open())
 	{
-		getline(infile1, msgstr); // The first line of file is the data we use
-		cout << "Read in encrypted message from message.aes" << endl;
+		std::stringstream strStream;
+		strStream << infile1.rdbuf(); //read the file
+		msgstr = strStream.str(); //str holds the content of the file
 		infile1.close();
-	} else cout << "Unable to open file";
-
+	} else cout << "Unable to open file\n";
 	char * msg = new char[msgstr.size()+1];
 	strcpy(msg, msgstr.c_str());
 	char *message;
 	message = msg;
 
 	// output the plaintext to be encrypted
-	//cout << "Plaintext: " << message << endl;
+	//cout << endl << "Plaintext: " << endl << message << endl << endl;
 
 	// Pad message to 16 bytes
 	int originalLen = strlen((const char *)message);
+	
+	cout << "Message Length in encrypt.cpp :"<< originalLen <<endl;
 
 	int paddedMessageLen = originalLen;
 
@@ -193,15 +190,13 @@ int main() {
 
 	string str;
 	ifstream infile;
-	infile.open("keyfile", ios::in | ios::binary);
+	infile.open("../aes/keyfile", ios::in | ios::binary);
 
 	if (infile.is_open())
 	{
-		getline(infile, str); // The first line of file should be the key
+		getline(infile, str); // The first line
 		infile.close();
-	}
-
-	else cout << "Unable to open file";
+	} else cout << "Unable to open file";
 
 	istringstream hex_chars_stream(str);
 	unsigned char key[16];
@@ -221,25 +216,30 @@ int main() {
 		AESEncrypt(paddedMessage+i, expandedKey, encryptedMessage+i);
 	}
 
-	cout << "Encrypted message in hex:" << endl;
+	string ENCfileNameSTR = "./data/client/ENC";
+	ENCfileNameSTR.append(fileName);
+	ENCfileNameSTR.pop_back();
+	ENCfileNameSTR.pop_back();
+	ENCfileNameSTR.pop_back();
+	ENCfileNameSTR.append("txt");
+	ofstream MyFile(ENCfileNameSTR);
 	for (int i = 0; i < paddedMessageLen; i++) {
-		cout << hex << (int) encryptedMessage[i];
+		MyFile <<  encryptedMessage[i];
+	}
+	
+	int m;
+	for ( m = 0; m < paddedMessageLen; m++);
+	cout << "number of encrypted characters: " << m;
+	cout << endl << endl;
+	
+	cout << "Encrypted message in hex:" << endl;
+	for ( int n = 0; n < paddedMessageLen; n++) {
+		cout << hex << (int) encryptedMessage[n];
 		cout << " ";
+		
 	}
-
-	cout << endl;
-
-	// Write the encrypted string out to file "message.aes"
-	ofstream outfile;
-	outfile.open("message.aes", ios::out | ios::binary);
-	if (outfile.is_open())
-	{
-		outfile << encryptedMessage;
-		outfile.close();
-		cout << "Wrote encrypted message to file message.aes" << endl;
-	}
-
-	else cout << "Unable to open file";
+	cout << endl << endl << "Encrypted message stored in: " << ENCfileNameSTR << endl;
+	
 
 	// Free memory
 	delete[] paddedMessage;
@@ -247,3 +247,4 @@ int main() {
 
 	return 0;
 }
+*/
